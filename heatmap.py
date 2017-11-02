@@ -5,7 +5,7 @@ from bokeh.models import (
     LogColorMapper,
     LinearColorMapper
 )
-from bokeh.palettes import Viridis6 as palette
+from bokeh.palettes import Greys256 as palette
 from bokeh.plotting import figure
 from bokeh.layouts import widgetbox, row, column
 import time
@@ -17,17 +17,18 @@ import numpy
 
 # data = np.load('cardict.npy').item()
 coor = pandas.read_csv('points.csv')
-data = pandas.read_csv('Lekagul Sensor Data.csv')
-print(coor.keys())
+data = pandas.read_csv('sensorData.csv')
+print(data.keys())
 palette.reverse()
-color_mapper = LinearColorMapper(palette=palette)
+color_mapper = LogColorMapper(palette=palette)
 
 source = ColumnDataSource(data=dict(
-    x=coor['x'],
-    y=coor['y'],
+    x=list(coor['x']),
+    y=list(coor['y']),
     voldata = [1]*len(coor['x']),
-    address = coor['location'],
+    address = list(coor['location']),
 ))
+print(source.data['address'])
 TOOLS = "pan,wheel_zoom,reset,hover,save"
 p = figure(
     title="Traffic Volume",
@@ -46,17 +47,25 @@ button = Button(label="Run", button_type="success")
 
 
 def update():
-	nodeVolume = {}
-	for i in coor['location']:
-		nodeVolume[i] = 0
-	for index, row in data.iterrows():
-		nodeVolume[row['car-id']] +=1
-	patch = {'bar' : [nodeVolume]}
+    nodeVolume = [0 for i in coor['location']]
+    for number, row in data.iterrows():
+        # print(source.data['address'])
+        theIndex = source.data['address'].index(row['gate-name'])
+        nodeVolume[theIndex] += 1
+        if number % 1000 == 0:
+            print(number)
+            tuplist = []
+            for i in range(len(nodeVolume)):
+                tuplist.append((i, nodeVolume[i]))
 
+            patch = {'voldata' : tuplist}
+            source.patch(patch)
+        # time.sleep(0.05)
+        
+    print('done!!')
 
-
-
+button.on_click(update)
 show(p)
-# layout = column(p,widgetbox(button))
-# curdoc().add_root(layout)
-# curdoc().title = "Heatmap"
+layout = column(p,widgetbox(button))
+curdoc().add_root(layout)
+curdoc().title = "Heatmap"
