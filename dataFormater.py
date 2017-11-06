@@ -6,7 +6,7 @@ import numpy as np
 # 	if row['car-id'] not in unique:
 # 		unique[row['car-id']] = {'path': [(row['Timestamp'], row['gate-name'])], 'type': row['car-type']}
 # 	unique[row['car-id']]['path'].append((row['Timestamp'], row['gate-name'], row['car-type']))
-# np.save('cardict.npy', unique) 
+# np.save('cardict.n py', unique) 
 unique = np.load('cardict.npy').item()
 print(set([unique[i]['type'] for i in unique]))
 locations = set()
