@@ -17,7 +17,7 @@ import numpy
 
 # data = np.load('cardict.npy').item()
 coor = pandas.read_csv('points.csv')
-data = pandas.read_csv('sensorDataTest.csv')
+data = pandas.read_csv('sensorData.csv')
 print(data.keys())
 palette.reverse()
 color_mapper = LogColorMapper(palette=palette)
@@ -45,8 +45,8 @@ hover.tooltips = [
     ("Volume", "@voldata"),
     ("Address", "@address"),
 ]
-button1 = Button(label="Run Total Footprint", button_type="success")
-button2 = Button(label="Run Realtime", button_type="success")
+button1 = Button(label="Run Node Freq", button_type="success")
+button2 = Button(label="Run Streaming Traffic", button_type="success")
 
 #this streams in the data and counts every car that has been to the node thus far. 
 def update1():
@@ -55,7 +55,7 @@ def update1():
         # print(source.data['address'])
         theIndex = source.data['address'].index(row['gate-name'])
         nodeVolume[theIndex] += 1
-        if number % 1000 == 0:
+        if number % 10 == 0:
             print(number)
             tuplist = []
             for i in range(len(nodeVolume)):
@@ -63,7 +63,7 @@ def update1():
 
             patch = {'voldata' : tuplist}
             source.patch(patch)
-        # time.sleep(0.05)
+            time.sleep(0.05)
         
     print('done!!')
 #this streams in the data and counts every car currently at that node. This is finally useful yay!!!
@@ -73,7 +73,7 @@ def update2():
     exited = None 
 
     for number, row in data.iterrows():
-        sleep(.5)
+        sleep(.1)
         # print(source.data['voldata'])
         # print(source.data['address'])
         if row['car-id'] in seen:
