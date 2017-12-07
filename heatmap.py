@@ -6,22 +6,30 @@ from bokeh.models import (
     LinearColorMapper
 )
 from bokeh.palettes import OrRd9 as palette
+from bokeh.palettes import Category10 as arrowcolors
+
 from bokeh.plotting import figure
 from bokeh.layouts import widgetbox, row, column
 from time import sleep
 from bokeh.sampledata.us_counties import data as counties
 from bokeh.sampledata.unemployment import data as unemployment
 import pandas
-from bokeh.models.widgets import Button
-import numpy 
+from bokeh.models.widgets import Button, TextInput
+from bokeh.models import Arrow, OpenHead, NormalHead, VeeHead
+
+import numpy as np
+import datetime
+
 
 # data = np.load('cardict.npy').item()
 coor = pandas.read_csv('points.csv')
 data = pandas.read_csv('sensorData.csv')
+cardict = np.load('cardict.npy').item()
 print(data.keys())
 palette.reverse()
 color_mapper = LogColorMapper(palette=palette)
-
+colors = arrowcolors[9]
+curcolor = 0 
 source = ColumnDataSource(data=dict(
     x=list(coor['x']),
     y=list(coor['y']),
@@ -47,7 +55,8 @@ hover.tooltips = [
 ]
 button1 = Button(label="Run Node Freq", button_type="success")
 button2 = Button(label="Run Streaming Traffic", button_type="success")
-
+text_input = TextInput(value="20154301124328-262", title="Arrow Car")
+button3 = Button(label="Run Node Freq Night", button_type="success")
 #this streams in the data and counts every car that has been to the node thus far. 
 def update1():
     nodeVolume = [0 for i in coor['location']]
@@ -112,10 +121,47 @@ def update2():
         
     print('done!!')
 
+def arrows(attr, old, new):
+    global curcolor
+    print('pls run')
+    locList = cardict[text_input.value]['path']
+    for i in range(1, len(locList)-1):
+        cur=coor.loc[coor['location'] == locList[i][1]]
+        nextpoint = coor.loc[coor['location'] == locList[i+1][1]]
+        p.add_layout(Arrow(end=VeeHead(size=20,fill_color=colors[curcolor]), line_color=colors[curcolor],
+                       x_start=float(cur.iloc[0]['x']), y_start=float(cur.iloc[0]['y']),
+                        x_end=float(nextpoint.iloc[0]['x']), y_end=float(nextpoint.iloc[0]['y'])))
+    curcolor +=1
+def night():
+    nodeVolume = [0 for i in coor['location']]
+    ids = set()
+    for number, row in data.iterrows():
+        # print(source.data['address'])
+        time = datetime.datetime.strptime(row['Timestamp'], "%Y-%m-%d %H:%M:%S")
+        hr, mi = (time.hour, time.minute)
+        if hr<5 or hr>22 :
+            ids.add(row['car-id'])
+            theIndex = source.data['address'].index(row['gate-name'])
+            nodeVolume[theIndex] += 1
+    tuplist = []
+    for i in range(len(nodeVolume)):
+        tuplist.append((i, nodeVolume[i]))
+
+    patch = {'voldata' : tuplist}
+    source.patch(patch)
+    print(ids)
+    print(len(ids))
+            
+    print('done!!')
+
+
+
+
+
 button1.on_click(update1)
 button2.on_click(update2)
-
-show(p)
-layout = column(p,widgetbox(button1,button2))
-curdoc().add_root(layout)
+button3.on_click(night)
+text_input.on_change('value', arrows)
+layout = column(p,widgetbox(button1,button3,button2,text_input))
+curdoc().add_root(layout,widgetbox(text_input))
 curdoc().title = "Heatmap"
